@@ -72,14 +72,27 @@ public class InboxGui extends SimpleGui {
 
     /** Take one letter out; the queue backfills FIFO behind it. */
     private void withdraw(int index) {
-        if (index >= box.inbox.size()) {
-            return;
+        if (takeOne(player, box, index)) {
+            refresh();
+        }
+    }
+
+    /**
+     * Take one letter (at {@code index}) out of {@code box} into {@code player}'s inventory
+     * (overflow drops at their feet), backfilling the queue FIFO behind it — the exact effect of
+     * clicking a slot in the 3x3 GUI. Shared by the GUI callback and the {@code /postbox take}
+     * command backend so both drive the identical withdrawal path. Returns true if a letter left
+     * the box (so the GUI knows to refresh). Callers enforce owner-only, just as the GUI does.
+     */
+    public static boolean takeOne(ServerPlayer player, Mail.Box box, int index) {
+        if (index < 0 || index >= box.inbox.size()) {
+            return false;
         }
         ServerLevel level = (ServerLevel) player.level();
         Mail.Letter letter = box.inbox.get(index);
         ItemStack stack = Mail.decodeStack(level, letter.stack);
         if (stack.isEmpty()) {
-            return; // never destroy a letter we can't materialize
+            return false; // never destroy a letter we can't materialize
         }
         box.inbox.remove(index);
         if (!player.getInventory().add(stack)) {
@@ -89,7 +102,12 @@ public class InboxGui extends SimpleGui {
         backfill(level, box);
         Mailboxes.updateFlag(level, box);
         Mail.save();
-        refresh();
+        return true;
+    }
+
+    /** Fill any free inbox slots of {@code box} from its owner's queue (FIFO). */
+    public static void fill(ServerLevel level, Mail.Box box) {
+        backfill(level, box);
     }
 
     private static void backfill(ServerLevel level, Mail.Box box) {

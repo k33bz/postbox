@@ -36,6 +36,7 @@ public class Postbox implements ModInitializer {
     public void onInitialize() {
         CONFIG = PostboxConfig.load();
         Mail.store(); // load the mail store early so a corrupt file complains at boot
+        Mail.save();  // ...and materialize it, so external tools (web inbox) can rely on it
         PostboxCommands.register();
         registerInteraction();
         registerTick();

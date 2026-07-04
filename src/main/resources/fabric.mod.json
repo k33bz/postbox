@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "postbox",
+  "version": "${version}",
+  "name": "Postbox",
+  "description": "Server-side mail: raise a Rainbow Mailbox on an end rod, send letters and books to anyone — postage in emeralds, delivery that actually travels, express couriers by wandering trader. Vanilla clients connect with no mods.",
+  "authors": [
+    "k33bz"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.k33bz.postbox.Postbox"
+    ]
+  },
+  "mixins": [
+    "postbox.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

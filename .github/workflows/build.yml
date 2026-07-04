@@ -1,0 +1,54 @@
+name: build
+
+on:
+  push:
+    branches: [main, '26.*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: gradle
+      - name: Build + tests
+        run: ./gradlew build
+      - name: Diagnose mappings (only on failure)
+        if: failure()
+        run: |
+          J=$(find ~/.gradle/caches/fabric-loom -name "*minecraft*.jar" 2>/dev/null | grep -viE "sources|javadoc|intermediary" | head -1)
+          echo "== $J"
+          echo "== dialog inputs"
+          javap -cp "$J" net.minecraft.server.dialog.CommonDialogData 2>/dev/null | head -8
+          javap -cp "$J" net.minecraft.server.dialog.Input 2>/dev/null | head -8
+          javap -cp "$J" net.minecraft.server.dialog.input.TextInput 2>/dev/null | head -10
+          javap -cp "$J" net.minecraft.server.dialog.input.SingleOptionInput 2>/dev/null | head -10
+          javap -cp "$J" net.minecraft.server.dialog.input.BooleanInput 2>/dev/null | head -8
+          javap -cp "$J" net.minecraft.server.dialog.input.NumberRangeInput 2>/dev/null | head -8
+          javap -cp "$J" net.minecraft.server.dialog.action.CommandTemplate 2>/dev/null | head -8
+          javap -cp "$J" net.minecraft.server.dialog.action.ParsedTemplate 2>/dev/null | head -8
+          unzip -l "$J" 2>/dev/null | grep "server/dialog" | head -30 || true
+          echo "== book components"
+          javap -cp "$J" net.minecraft.world.item.component.WrittenBookContent 2>/dev/null | grep -iE "public net|pages" | head -6
+          javap -cp "$J" net.minecraft.world.item.component.WritableBookContent 2>/dev/null | grep -iE "public net|pages" | head -6
+          javap -cp "$J" net.minecraft.world.item.component.BundleContents 2>/dev/null | grep -iE "public net|static" | head -8
+          javap -cp "$J" net.minecraft.world.item.ItemStackTemplate 2>/dev/null | grep "public" | head -6
+          echo "== entities"
+          unzip -l "$J" 2>/dev/null | grep -iE "WanderingTrader.class|TraderLlama.class|Interaction.class" | head -6 || true
+          javap -cp "$J" net.minecraft.world.entity.EntityTypes 2>/dev/null | grep -iE "WANDERING|TRADER" | head -4
+          javap -cp "$J" net.minecraft.world.entity.ai.navigation.PathNavigation 2>/dev/null | grep moveTo | head -4
+          echo "== skull / profile"
+          javap -cp "$J" net.minecraft.world.level.block.entity.SkullBlockEntity 2>/dev/null | grep -iE "profile" | head -4
+          javap -cp "$J" net.minecraft.world.item.component.ResolvableProfile 2>/dev/null | grep -iE "public static|name" | head -6
+          echo "== misc"
+          javap -cp "$J" net.minecraft.server.MinecraftServer 2>/dev/null | grep -iE "getServerDirectory|services" | head -4
+          javap -cp "$J" net.minecraft.world.level.Level 2>/dev/null | grep -iE "time|dimension" | head -8
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: postbox
+          path: build/libs/*.jar

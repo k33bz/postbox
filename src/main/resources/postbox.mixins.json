@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.k33bz.postbox.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "BlockItemPlaceMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

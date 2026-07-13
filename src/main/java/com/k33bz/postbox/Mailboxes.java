@@ -20,6 +20,11 @@ public final class Mailboxes {
     private Mailboxes() {
     }
 
+    /** Escape a string for safe interpolation inside an SNBT double-quoted string literal. */
+    private static String escapeSnbtString(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     /** Form a mailbox: head block at {@code headPos} was just placed on an end rod. */
     public static Mail.Box form(ServerLevel level, ServerPlayer placer, BlockPos headPos) {
         BlockPos rod = headPos.below();
@@ -70,7 +75,7 @@ public final class Mailboxes {
         Mail.run(level, String.format(Locale.ROOT,
                 "summon minecraft:text_display %.2f %.2f %.2f {Tags:[\"%s\",\"%s\"],billboard:\"center\","
                         + "see_through:1b,text:{text:\"%s's Mailbox\",color:\"gold\"}}",
-                cx, top + 0.95, cz, Mail.BOX_TAG, tag, box.ownerName));
+                cx, top + 0.95, cz, Mail.BOX_TAG, tag, escapeSnbtString(box.ownerName)));
         // Interaction hitbox around the body
         Mail.run(level, String.format(Locale.ROOT,
                 "summon minecraft:interaction %.2f %.2f %.2f {Tags:[\"%s\",\"%s\"],width:1.2f,height:0.8f}",

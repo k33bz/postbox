@@ -20,9 +20,28 @@ public final class Mailboxes {
     private Mailboxes() {
     }
 
-    /** Escape a string for safe interpolation inside an SNBT double-quoted string literal. */
+    /**
+     * Sanitize a string for safe interpolation inside an SNBT double-quoted string literal. Robust to
+     * ANY input, not just validated usernames (defense-in-depth): control characters — which would
+     * break the single-line command or the SNBT string — and legacy section-sign (\u00a7) formatting
+     * codes are dropped, and backslash/quote are escaped.
+     */
     private static String escapeSnbtString(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        if (s == null) {
+            return "";
+        }
+        StringBuilder b = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < 0x20 || c == '\u00a7') {
+                continue;
+            }
+            if (c == '\\' || c == '"') {
+                b.append('\\');
+            }
+            b.append(c);
+        }
+        return b.toString();
     }
 
     /** Form a mailbox: head block at {@code headPos} was just placed on an end rod. */

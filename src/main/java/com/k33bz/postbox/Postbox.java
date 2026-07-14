@@ -102,15 +102,30 @@ public class Postbox implements ModInitializer {
 
     /** Breaking the end rod under a mailbox dismantles it (head drops back, mail to queue). */
     private void registerBreak() {
-        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
             if (!state.is(Blocks.END_ROD) || !(world instanceof ServerLevel level)) {
-                return;
+                return true;
             }
             Mail.Box box = Mail.boxAt(level.dimension().identifier().toString(),
                     pos.getX(), pos.getY(), pos.getZ());
-            if (box != null) {
-                Mailboxes.dismantle(level, box);
+            if (box == null) {
+                return true;
             }
+            // Only the owner (or a creative-mode admin) may dismantle a mailbox — otherwise any
+            // player could break someone else's box, harvest the rare Rainbow Mailbox head, and dump
+            // their mail. Non-owners have the break vetoed (the box + head stay put).
+            boolean allowed = player instanceof net.minecraft.server.level.ServerPlayer sp
+                    && (box.owner.equals(sp.getUUID().toString()) || sp.isCreative());
+            if (!allowed) {
+                if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    sp.sendSystemMessage(net.minecraft.network.chat.Component
+                            .literal("That mailbox isn't yours to dismantle.")
+                            .withStyle(net.minecraft.ChatFormatting.RED));
+                }
+                return false;
+            }
+            Mailboxes.dismantle(level, box);
+            return true;
         });
     }
 

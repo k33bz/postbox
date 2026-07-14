@@ -128,6 +128,7 @@ public final class Sender {
                 return false;
             }
             letterStack = held.copy();
+            letterStack.setCount(1); // mail exactly one book — the hand only gives up one (shrink(1))
             chars = Letters.chars(letterStack);
         } else {
             if (message == null || message.isBlank()) {
@@ -142,8 +143,10 @@ public final class Sender {
         boolean handDelivery = usingBox.owner.equals(to.uuid());
         boolean hasBox = toBox != null;
 
-        // Queue cap: reject up front — mail is never silently dropped.
-        if (!handDelivery && Mail.pendingCountFor(to.uuid()) >= cfg.maxQueued) {
+        // Queue cap: reject up front — mail is never silently dropped. Applies to hand delivery too
+        // (it lands in the recipient's inbox, which pendingCountFor counts), so a free self-addressed
+        // or hijacked-session hand delivery can no longer flood a player's box without bound.
+        if (Mail.pendingCountFor(to.uuid()) >= cfg.maxQueued) {
             fail(sender, to.name() + "'s mail queue is full (" + cfg.maxQueued + "). Try later.");
             return false;
         }

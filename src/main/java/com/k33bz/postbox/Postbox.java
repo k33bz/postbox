@@ -97,6 +97,7 @@ public class Postbox implements ModInitializer {
             }
             sweepCounter = 0;
             Delivery.sweep(server, CONFIG);
+            Outbox.ingest(server, CONFIG);
         });
     }
 

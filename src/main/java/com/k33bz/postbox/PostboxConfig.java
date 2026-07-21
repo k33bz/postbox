@@ -54,6 +54,9 @@ public class PostboxConfig {
     // --- engine ---
     /** Server-tick interval between delivery sweeps. */
     public int sweepIntervalTicks = 20;
+    /** Transit delay for system mail dropped in via the {@code config/postbox_outbox/} spool
+     *  ({@link Outbox}) — short by default so a courier still animates but the note lands promptly. */
+    public long systemMailDelayMs = 3000L;
 
     // ------------------------------------------------------------------
 

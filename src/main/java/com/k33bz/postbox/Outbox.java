@@ -52,18 +52,28 @@ public final class Outbox {
         }
         ServerLevel level = server.overworld();
         for (Path f : files) {
+            String content;
             try {
-                Request r = GSON.fromJson(Files.readString(f), Request.class);
+                content = Files.readString(f);
+            } catch (Exception e) {
+                continue; // unreadable right now; retry next sweep
+            }
+            // CLAIM the file by removing it FIRST, and only enqueue if the claim succeeds. A file we
+            // can't delete (e.g. a wrong-owner drop) is thus skipped, not re-ingested every sweep —
+            // otherwise a single stuck request would mail the recipient on repeat forever.
+            try {
+                Files.delete(f);
+            } catch (Exception e) {
+                Postbox.LOGGER.warn("[postbox] can't claim outbox request {} — skipping to avoid duplicate mail", f, e);
+                continue;
+            }
+            try {
+                Request r = GSON.fromJson(content, Request.class);
                 if (r != null && r.toUuid != null && !r.toUuid.isBlank()) {
                     enqueue(level, r, cfg);
                 }
             } catch (Exception e) {
                 Postbox.LOGGER.warn("[postbox] bad outbox request {}", f, e);
-            }
-            try {
-                Files.deleteIfExists(f);
-            } catch (Exception e) {
-                Postbox.LOGGER.warn("[postbox] could not remove outbox request {}", f, e);
             }
         }
     }

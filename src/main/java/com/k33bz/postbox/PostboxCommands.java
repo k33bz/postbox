@@ -83,11 +83,8 @@ public final class PostboxCommands {
             ctx.getSource().sendFailure(Component.literal("Players only."));
             return 0;
         }
-        Mail.Box fromBox = Mail.firstBoxOf(player.getUUID().toString());
+        Mail.Box fromBox = ownBoxInReach(player, "You have no mailbox to send from. Place one first.");
         if (fromBox == null) {
-            player.sendSystemMessage(Component.literal(
-                            "You have no mailbox to send from. Place one first.")
-                    .withStyle(ChatFormatting.RED));
             return 0;
         }
         String recipient = StringArgumentType.getString(ctx, "recipient");
@@ -106,10 +103,8 @@ public final class PostboxCommands {
             ctx.getSource().sendFailure(Component.literal("Players only."));
             return 0;
         }
-        Mail.Box box = Mail.firstBoxOf(player.getUUID().toString());
+        Mail.Box box = ownBoxInReach(player, "You have no mailbox.");
         if (box == null) {
-            player.sendSystemMessage(Component.literal("You have no mailbox.")
-                    .withStyle(ChatFormatting.RED));
             return 0;
         }
         net.minecraft.server.level.ServerLevel level =
@@ -128,6 +123,26 @@ public final class PostboxCommands {
                         box.inbox.size(), Mail.queueOf(box.owner).size()))
                 .withStyle(ChatFormatting.GOLD));
         return 1;
+    }
+
+    /**
+     * The caller's own mailbox, but only while they stand at it. testsend/take are permission 0
+     * (the harness bot drives them), and without this rule anyone could send from, and empty, their
+     * mailbox from anywhere in the world, skipping the trip the dialog and inbox GUI require.
+     */
+    private static Mail.Box ownBoxInReach(ServerPlayer player, String noBoxMessage) {
+        Mail.Box box = Mail.firstBoxOf(player.getUUID().toString());
+        if (box == null) {
+            player.sendSystemMessage(Component.literal(noBoxMessage).withStyle(ChatFormatting.RED));
+            return null;
+        }
+        if (!SendDialog.inReach(player, box)) {
+            player.sendSystemMessage(Component.literal(String.format(Locale.ROOT,
+                            "Stand at your mailbox (%d %d %d) to do that.", box.x, box.y, box.z))
+                    .withStyle(ChatFormatting.RED));
+            return null;
+        }
+        return box;
     }
 
     private static int check(CommandContext<CommandSourceStack> ctx) {

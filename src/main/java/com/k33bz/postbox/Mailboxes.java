@@ -51,7 +51,9 @@ public final class Mailboxes {
         level.removeBlock(headPos, false);
 
         Mail.Box box = new Mail.Box();
-        box.id = Long.toHexString(level.getGameTime()) + "b" + Mail.store().boxes.size();
+        // Random id: the old gameTime + box-count id could repeat after a dismantle in the same tick,
+        // and two boxes sharing an id share display tags (one box's kill wipes the other's displays).
+        box.id = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         box.owner = placer.getUUID().toString();
         box.ownerName = placer.getName().getString();
         box.dim = level.dimension().identifier().toString();

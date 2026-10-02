@@ -70,6 +70,15 @@ public final class Outbox {
             try {
                 Request r = GSON.fromJson(content, Request.class);
                 if (r != null && r.toUuid != null && !r.toUuid.isBlank()) {
+                    try {
+                        r.toUuid = java.util.UUID.fromString(r.toUuid.trim()).toString();
+                    } catch (IllegalArgumentException bad) {
+                        // Delivery parses this as a UUID inside the server tick: a malformed one used
+                        // to crash the server, and again on every restart (the letter was saved).
+                        Postbox.LOGGER.warn("[postbox] outbox request {} has a malformed toUuid '{}'; dropped",
+                                f.getFileName(), r.toUuid);
+                        continue;
+                    }
                     enqueue(level, r, cfg);
                 }
             } catch (Exception e) {

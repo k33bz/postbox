@@ -5,7 +5,13 @@ clients connect with no mods, no resource pack. Mail is real: letters are book i
 postage is emeralds, and delivery takes time proportional to distance (unless you bribe
 the post office).
 
-**For Minecraft 26.2** (branch `main`) and **26.1.x** (branch `26.1`) · Fabric Loader ≥ 0.19.3 · Java 25
+**For Minecraft 26.3** (branch `main`), **26.2** (branch `26.2`) and **26.1.x** (branch `26.1`) · Java 25
+
+| Branch | Minecraft | Status |
+|---|---|---|
+| `main` | 26.3 | [![build main](https://github.com/k33bz/postbox/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/k33bz/postbox/actions/workflows/build.yml?query=branch%3Amain) ![mod main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Fmod.json) ![minecraft main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Fminecraft.json) ![loader main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Floader.json) ![fabric-api main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Ffabric-api.json) ![sgui main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Fsgui.json) ![server-test main](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2Fmain%2Fserver-test.json) |
+| `26.2` | 26.2 | [![build 26.2](https://github.com/k33bz/postbox/actions/workflows/build.yml/badge.svg?branch=26.2)](https://github.com/k33bz/postbox/actions/workflows/build.yml?query=branch%3A26.2) ![mod 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Fmod.json) ![minecraft 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Fminecraft.json) ![loader 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Floader.json) ![fabric-api 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Ffabric-api.json) ![sgui 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Fsgui.json) ![server-test 26.2](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.2%2Fserver-test.json) |
+| `26.1` | 26.1.x | [![build 26.1](https://github.com/k33bz/postbox/actions/workflows/build.yml/badge.svg?branch=26.1)](https://github.com/k33bz/postbox/actions/workflows/build.yml?query=branch%3A26.1) ![mod 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Fmod.json) ![minecraft 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Fminecraft.json) ![loader 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Floader.json) ![fabric-api 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Ffabric-api.json) ![sgui 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Fsgui.json) ![server-test 26.1](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fk33bz%2Fpostbox%2Fbadges%2F26.1%2Fserver-test.json) |
 
 ## Raising a mailbox
 
@@ -38,6 +44,9 @@ Admins can hand out heads with:
   field travel as part of the dialog command — if your client strips them, prefer
   mailing a written book for multi-page prose.
 - `/mail check` shows inbox/queue counts and every letter still in transit with its ETA.
+- `/postbox testsend <player> [extra]` and `/postbox take` are the command twins of the send
+  form and the inbox (for scripted test clients). Like the form and the inbox, they only work
+  while you stand at your own mailbox.
 
 ## Postage & delivery
 
@@ -77,8 +86,14 @@ Franklin, Keats).
 ## Config
 
 `config/postbox.json` (gson, file-only for v1): postage knobs, delivery speeds, queue cap,
-courier scene toggle, trader loot chance, sweep interval. `config/postbox_mail.json` is
-the mail store.
+courier scene toggle, trader loot chance, sweep interval. Values are clamped to sane ranges when
+loaded; a file that can't be parsed is left untouched and postbox runs on defaults until it's
+fixed and the server restarts.
+
+`config/postbox_mail.json` is the mail store. It is saved atomically (temp file, then move). If it
+ever can't be parsed at boot, postbox copies it to `postbox_mail.json.corrupt-<millis>` before
+starting with an empty store, so nothing is lost: repair the copy and put it back with the server
+stopped.
 
 ## Store schema (for external tools)
 
@@ -106,8 +121,28 @@ the mail store.
 ./gradlew build
 ```
 
-Branches: `main` = Minecraft 26.2, `26.1` = Minecraft 26.1.2 — identical code, only
-dependency pins differ. CI builds both.
+## Branches, CI and releases
+
+| Branch | Minecraft | Jar |
+|---|---|---|
+| `main` | 26.3 | `postbox-<version>+26.3.jar` |
+| `26.2` | 26.2 | `postbox-<version>+26.2.jar` |
+| `26.1` | 26.1.2 | `postbox-<version>+26.1.2.jar` |
+
+Identical code on every branch; only `gradle.properties` differs (loader, fabric-api, the bundled
+sgui build and the dev run dir, following sanctuary's branch of the same Minecraft version). Each
+jar only loads on its own Minecraft line.
+
+Every push and PR builds, runs the unit tests, and boots a real Fabric server twice
+(`scripts/server_test.py`): config clamping, the mail store, `/mail`, the outbox spool (a valid
+request delivered as a written book, a malformed one dropped), Lost Mail from a slain trader,
+leftover couriers removed, then a restart on a corrupt store that must be backed up, not wiped.
+Placing a mailbox and the dialog/inbox need a player, so they stay with the mineflayer harness.
+
+Releases are per line: push a tag `v<mod_version>+<minecraft_version>` (for example
+`v0.1.3+26.1.2`) on that line's branch. CI checks the tag against the commit, builds, runs the
+server test, and publishes the jar as a [GitHub release](../../releases) with notes from
+`CHANGELOG.md`. Only `main` releases are marked latest.
 
 ## License
 

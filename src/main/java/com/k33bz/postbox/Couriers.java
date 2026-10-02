@@ -29,6 +29,30 @@ public final class Couriers {
     private static final List<Run> RUNS = new ArrayList<>();
     private static int nextRunId = 0;
 
+    /**
+     * Run tags of scenes still playing. Courier entities are invulnerable and never despawn, so one
+     * left behind by a restart or an unloaded chunk would stand there forever; {@link #isStray}
+     * lets the entity-load hook remove any courier whose scene is no longer running.
+     */
+    private static final java.util.Set<String> LIVE = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Random per boot, so a run tag from a previous session can never look live again. */
+    private static final String SESSION = Long.toHexString(new java.util.Random().nextLong() & 0xffffffffL);
+
+    /** A courier entity (by its tags) whose scene is not running: left over, safe to remove. */
+    public static boolean isStray(java.util.Collection<String> tags) {
+        if (!tags.contains(Mail.COURIER_TAG)) {
+            return false;
+        }
+        String prefix = Mail.COURIER_TAG + "_";
+        for (String t : tags) {
+            if (t.startsWith(prefix) && LIVE.contains(t)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static final int WALK_TIMEOUT_TICKS = 600;   // 30 s each leg
     private static final int PAUSE_TICKS = 30;
 
@@ -49,7 +73,8 @@ public final class Couriers {
         Run run = new Run();
         run.level = level;
         run.box = box;
-        run.runTag = Mail.COURIER_TAG + "_r" + (nextRunId++);
+        run.runTag = Mail.COURIER_TAG + "_" + SESSION + "r" + (nextRunId++);
+        LIVE.add(run.runTag); // before the summon: the entity-load hook sees it the moment it spawns
         run.target = new Vec3(box.x + 0.5, box.y, box.z + 0.5);
 
         double angle = level.getRandom().nextDouble() * Math.PI * 2;
@@ -179,5 +204,6 @@ public final class Couriers {
             }
         }
         Mail.run(run.level, "kill @e[tag=" + run.runTag + "]");
+        LIVE.remove(run.runTag); // anything of this run that loads later (unloaded chunk) is a stray
     }
 }

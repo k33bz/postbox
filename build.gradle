@@ -12,11 +12,11 @@ base {
 }
 
 loom {
-    // 26.2 branch: isolated run dir — never let a 26.2 server touch (and upgrade!) a
-    // 26.1.2 dev world that lives in run/.
+    // One run dir per Minecraft line (dev_run_dir in gradle.properties): never let a newer server
+    // touch (and upgrade!) an older line's dev world.
     runs {
         server {
-            runDir "run262"
+            runDir project.dev_run_dir
         }
     }
 }
@@ -32,7 +32,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     // sgui — standalone server-side GUI library (vanilla-client compatible, no Polymer needed).
-    include(implementation("eu.pb4:sgui:2.1.0+26.2"))
+    include(implementation("eu.pb4:sgui:${project.sgui_version}"))
 
     // Pure-logic unit tests (Postage) — no game runtime required.
     testImplementation platform('org.junit:junit-bom:5.11.3')
@@ -46,9 +46,12 @@ test {
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
     filteringCharset "UTF-8"
+    // fabric.mod.json pins "minecraft" to ~minecraft_version, so a line's jar only loads on its
+    // own Minecraft version and porting a line is a gradle.properties change only
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand "version": project.version, "minecraft_version": project.minecraft_version
     }
 }
 

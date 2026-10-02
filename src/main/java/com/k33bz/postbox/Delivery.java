@@ -71,7 +71,14 @@ public final class Delivery {
             }
         }
 
-        ServerPlayer online = server.getPlayerList().getPlayer(UUID.fromString(letter.toUuid));
+        // Never let one bad letter (an old store, a hand-edited file) throw inside the server tick
+        ServerPlayer online = null;
+        try {
+            online = server.getPlayerList().getPlayer(UUID.fromString(letter.toUuid));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            Postbox.LOGGER.warn("[postbox] letter for malformed recipient '{}' was queued without a notice",
+                    letter.toUuid);
+        }
         if (online != null) {
             online.sendOverlayMessage(Component.literal("You have mail.")
                     .withStyle(ChatFormatting.GOLD));

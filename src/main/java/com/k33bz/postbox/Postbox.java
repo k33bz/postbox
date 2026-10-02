@@ -43,6 +43,7 @@ public class Postbox implements ModInitializer {
         registerBreak();
         registerJoinNotice();
         registerTraderLoot();
+        registerStrayCourierCleanup();
 
         var loader = net.fabricmc.loader.api.FabricLoader.getInstance();
         String version = loader.getModContainer(MOD_ID)
@@ -133,6 +134,20 @@ public class Postbox implements ModInitializer {
     private void registerJoinNotice() {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 Delivery.notifyOnJoin(handler.player));
+    }
+
+    /**
+     * Express couriers are invulnerable and never despawn. Any that outlived their scene (server
+     * stopped mid-delivery, or their chunk unloaded before the cleanup kill) are removed as soon as
+     * they load again, instead of standing in the world forever.
+     */
+    private void registerStrayCourierCleanup() {
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+            if (Couriers.isStray(entity.entityTags())) {
+                LOGGER.info("[postbox] removed a leftover express courier at {}", entity.blockPosition().toShortString());
+                level.getServer().execute(entity::discard); // not mid-load: after the chunk finishes
+            }
+        });
     }
 
     /** Any slain wandering trader (vanilla spawns included) may drop a Lost Mail bundle. */

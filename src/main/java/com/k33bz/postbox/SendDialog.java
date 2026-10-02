@@ -151,10 +151,12 @@ public final class SendDialog {
             return null;
         }
         Mail.Box box = Mail.boxById(id);
-        if (box == null || !box.dim.equals(player.level().dimension().identifier().toString())
-                || player.distanceToSqr(box.x + 0.5, box.y + 0.5, box.z + 0.5) > 8 * 8) {
-            return null;
-        }
-        return box;
+        return box != null && inReach(player, box) ? box : null;
+    }
+
+    /** Within 8 blocks of the box, in its dimension: the rule for every send and withdrawal. */
+    public static boolean inReach(ServerPlayer player, Mail.Box box) {
+        return box.dim.equals(player.level().dimension().identifier().toString())
+                && player.distanceToSqr(box.x + 0.5, box.y + 0.5, box.z + 0.5) <= 8 * 8;
     }
 }

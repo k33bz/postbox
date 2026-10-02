@@ -82,12 +82,17 @@ public final class Mail {
 
     public static Store store() {
         if (store == null) {
-            try {
-                if (Files.exists(path())) {
-                    store = GSON.fromJson(Files.readString(path()), new TypeToken<Store>() { }.getType());
+            Path file = path();
+            if (Files.exists(file)) {
+                try {
+                    store = GSON.fromJson(Files.readString(file), new TypeToken<Store>() { }.getType());
+                } catch (Exception e) {
+                    // Never start over on top of the only copy: back it up first (MailFiles).
+                    Path backup = MailFiles.backUpCorrupt(file, System.currentTimeMillis());
+                    Postbox.LOGGER.error("[postbox] could not read the mail store {}. It was copied to {} and "
+                            + "postbox is starting with an EMPTY store; repair the copy and put it back "
+                            + "(with the server stopped) to restore mailboxes and letters.", file, backup, e);
                 }
-            } catch (Exception e) {
-                Postbox.LOGGER.warn("[postbox] could not read mail store", e);
             }
             if (store == null) {
                 store = new Store();
@@ -95,19 +100,28 @@ public final class Mail {
             if (store.boxes == null) {
                 store.boxes = new ArrayList<>();
             }
+            store.boxes.removeIf(b -> b == null); // a stray `null` in the array would NPE every lookup
+            for (Box b : store.boxes) {
+                if (b.inbox == null) {
+                    b.inbox = new ArrayList<>();
+                }
+            }
             if (store.queues == null) {
                 store.queues = new HashMap<>();
             }
+            store.queues.replaceAll((uuid, letters) -> letters == null ? new ArrayList<>() : letters);
             if (store.inTransit == null) {
                 store.inTransit = new ArrayList<>();
             }
+            store.inTransit.removeIf(l -> l == null);
         }
         return store;
     }
 
+    /** Persist the store atomically (temp file + move), so a crash mid-save can't corrupt it. */
     public static void save() {
         try {
-            Files.writeString(path(), GSON.toJson(store()));
+            MailFiles.writeAtomically(path(), GSON.toJson(store()));
         } catch (IOException e) {
             Postbox.LOGGER.warn("[postbox] could not save mail store", e);
         }
